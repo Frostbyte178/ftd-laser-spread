@@ -17,6 +17,7 @@ p {
 
 .infoButtonWrapper span {
     background-image: url(assets/info_icon.png);
+    top: 30px;
 }
 .configButtonWrapper span {
     background-image: url(assets/config_icon.png);
@@ -86,4 +87,21 @@ p {
 
 .inputConfig input {
     width: 125px;
+}
+
+.mainWrapper {
+    z-index: 1;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    height: 100%;
+}
+
+.simulationWrapper {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    height: 100%;
 }

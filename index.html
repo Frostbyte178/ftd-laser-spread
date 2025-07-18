@@ -8,74 +8,76 @@
 </head>
 
 <body>
-    <span class="infoButtonWrapper">
-        <span style="font-size:30px;cursor:pointer" onclick="toggleInfo()" id="infoButton"></span>
-    </span>
-    <span class="configButtonWrapper">
-        <span style="font-size:30px;cursor:pointer" onclick="toggleConfig()" id="configButton"></span>
-    </span>
-    <div id="mainWrapper">
-        <h1>Laser Beam Widening Testing</h1>
-        <p>This is a paragraph.</p>
+    <div class="simulationWrapper">
+        <canvas id="simulationCanvas"></canvas>
     </div>
-    <div id="infoWrapper" class="info">
-        <h1>Welcome!</h1>
-        <h3>This site simulates a balancing change proposed to increase the effectiveness of 0q, 2q, 3q, and 4q lasers while disincentivizing long-range sniping.</h3>
-        <h3>The change revolves around making laser beams deal damage in cones instead of in rays, details below.</h3>
-        <h3>Left click on the simulation to fire the modified laser, right click to fire the current version of lasers.</h3>
-        <h3>Adjust the configuration of the lasers and the armor in the config menu via the gear icon beneath this tab.</h3>
-        <h2>Beam Expansion</h2>
-        <h3>Laser beams expand to deal damage in a cone, with the tip placed at the end of the optics. The radius of the cone depends on the damage of the shot.</h3>
-        <h3>Expansion is measured in damage per meter of expansion per 100m range. If the config value is set to 1000, then a 1000 damage shot will expand to a radius of 1m at 100m, 2m at 200m, etc.</h3>
-    </div>
-    <div id="configWrapper" class="config">
-        <h1>Config Menu</h1>
-        <h2>Setup Config</h2>
-        
-        <div class="inputConfig">
-            <label for="configRange">Range</label>
-            <input id="configRange" type="number">
-
-            <label for="configDps">DPS</label>
-            <input id="configDps" type="number">
-
-            <label for="configIntensity">Intensity</label>
-            <input id="configIntensity" type="number">
-
-            <label for="configAttenuation">Attenuation</label>
-            <input id="configAttenuation" type="number">
-
-            <label for="configStability">Stability</label>
-            <input id="configStability" type="number">
-
-            <label for="configQ" id="qLabel">Q Count: 0</label>
-            <input type="range" min="0" max="4" value="0" class="slider" id="configQ">
-
-            <label for="configArmor">Armor Type</label>
-            <select id="configArmor">
-                <option value="wood">Wood</option>
-                <option value="stone">Stone</option>
-                <option value="alloy">Alloy</option>
-                <option value="metal" selected="selected">Metal</option>
-                <option value="heavy">Heavy Armor</option>
-            </select>
-        </div><br>
-
-        <h2>New Stats Config</h2>
-        <h3>Only applies to the new lasers with beam widening.</h3>
-        <div class="inputConfig">
-            <label for="configInaccuracy">Inaccuracy</label>
-            <input id="configInaccuracy" type="number">
-
-            <label for="configExpansion">Expansion*</label>
-            <input id="configExpansion" type="number">
+    <div class="mainWrapper">
+        <span class="infoButtonWrapper">
+            <span style="font-size:30px;cursor:pointer" onclick="toggleInfo()" id="infoButton"></span>
+        </span>
+        <span class="configButtonWrapper">
+            <span style="font-size:30px;cursor:pointer" onclick="toggleConfig()" id="configButton"></span>
+        </span>
+        <div>
+            <h1>Laser Beam Widening Testing</h1>
         </div>
-        <h3>*See info tab for details.
-    </div>
-    <div id="simulationWrapper">
-        <!-- <canvas id="simulationCanvas"></canvas> -->
+        <div id="infoWrapper" class="info">
+            <h1>Welcome!</h1>
+            <h3>This site simulates a balancing change proposed to increase the effectiveness of 0q, 2q, 3q, and 4q lasers while disincentivizing long-range sniping.</h3>
+            <h3>The change revolves around making laser beams deal damage in cones instead of in rays, details below.</h3>
+            <h3>Click on the simulation to fire the modified laser, shift click to fire the current version of lasers.</h3>
+            <h3>Adjust the configuration of the lasers and the armor in the config menu via the gear icon beneath this tab.</h3>
+            <h2>Beam Expansion</h2>
+            <h3>Laser beams expand to deal damage in a cone, with the tip placed at the end of the optics. The radius of the cone depends on the damage of the shot.</h3>
+            <h3>Expansion is measured in damage per meter of expansion per 100m range. If the config value is set to 1000, then a 1000 damage shot will expand to a radius of 1m at 100m, 2m at 200m, etc.</h3>
+        </div>
+        <div id="configWrapper" class="config">
+            <h1>Config Menu</h1>
+            <h2>Setup Config</h2>
+            
+            <div class="inputConfig">
+                <label for="configRange">Range</label>
+                <input id="configRange" type="number" value="1000">
+
+                <label for="configDps">DPS</label>
+                <input id="configDps" type="number" value="1000">
+
+                <label for="configIntensity">Intensity</label>
+                <input id="configIntensity" type="number" value="60">
+
+                <label for="configAttenuation">Attenuation</label>
+                <input id="configAttenuation" type="number" value="1">
+
+                <label for="configStability">Stability</label>
+                <input id="configStability" type="number" value="100">
+
+                <label for="configQ" id="qLabel">Q Count: 0</label>
+                <input type="range" min="0" max="4" value="0" class="slider" id="configQ">
+
+                <label for="configArmor">Armor Type</label>
+                <select id="configArmor">
+                    <option value="wood">Wood</option>
+                    <option value="stone">Stone</option>
+                    <option value="alloy">Alloy</option>
+                    <option value="metal" selected="selected">Metal</option>
+                    <option value="heavy">Heavy Armor</option>
+                </select>
+            </div><br>
+
+            <h2>New Stats Config</h2>
+            <h3>Only applies to the new lasers with beam widening.</h3>
+            <div class="inputConfig">
+                <label for="configInaccuracy">Inaccuracy</label>
+                <input id="configInaccuracy" type="number" value="0.05">
+
+                <label for="configExpansion">Expansion*</label>
+                <input id="configExpansion" type="number" value="10000">
+            </div>
+            <h3>*See info tab for details.
+        </div>
     </div>
     <!-- JS -->
+    <script src="app.js"></script>
     <script>
         // Toggling the info side panel
         let infoOpen = false;
@@ -91,15 +93,6 @@
             configOpen = !configOpen;
             document.getElementById("configWrapper").style.width = configOpen ? "300px" : "0px";
             document.getElementById("configButton").style.right = configOpen ? "300px" : "0px";
-        }
-
-        // Writing the Q count to the label of the slider
-        let qSlider = document.getElementById("configQ");
-        let qLabel = document.getElementById("qLabel");
-        qLabel.innerHTML = `Q Count: ${qSlider.value}`;
-
-        qSlider.oninput = function() {
-            qLabel.innerHTML = `Q Count: ${this.value}`;;
         }
     </script>
 </body>
