@@ -272,19 +272,21 @@ function mergeColors(color1, color2) {
 // Draw wall of armor
 const armorMargin = 25;  // Empty margins around armor wall, in px
 function drawArmor() {
-    // Get top position of armor wall in pixels  to place it below the title
+    // Get top position of armor wall in pixels to place it below the title
     let titleDiv = document.getElementById('title').getBoundingClientRect();
     topY = titleDiv.y + titleDiv.height + armorMargin;
 
     // Get height of armor wall in pixels
     let wallHeight = ctx.canvas.height - topY - armorMargin;
 
-    // Get left position and width of armor wall in pixels
-    leftX = ctx.canvas.width * 0.2;
+    // Get width of armor wall in pixels
     let wallWidth = ctx.canvas.width * 0.6;
 
-    // Get width of one beam of armor (the entire width is spanned by the thickness)
-    beamWidth = wallWidth / config.thickness;
+    // Get width of one beam of armor (the entire width is spanned by the thickness, with a minimum of 10m to preserve some height)
+    beamWidth = wallWidth / Math.max(10, config.thickness);
+
+    // Get left position of armor wall in pixels
+    leftX = ctx.canvas.width / 2 - beamWidth * config.thickness / 2;
 
     // Dimensions of armor wall in beams
     let armorWidth = config.thickness;
