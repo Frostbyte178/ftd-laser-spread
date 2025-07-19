@@ -152,13 +152,13 @@ function mergeColors(color1, color2) {
     let mergedColor = '#'
 
     // Take the mean of each rgb pair between the two colors
-    for(let i = 0; i < 6; i += 2) {
+    for(let i = 1; i < 7; i += 2) {
         // Decimal values of the rgb pairs
         let subpixel1 = parseInt(color1.substring(i, i + 2), 16);
         let subpixel2 = parseInt(color2.substring(i, i + 2), 16);
 
         // Take mean of values and convert back to hexadecimal
-        mergedColor = Math.round((subpixel1 + subpixel2) / 2).toString(16);
+        mergedColor += Math.round((subpixel1 + subpixel2) / 2).toString(16);
     }
 
     return mergedColor;
