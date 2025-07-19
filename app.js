@@ -2,8 +2,8 @@ const canvas = document.getElementById("simulationCanvas");
 const ctx = canvas.getContext("2d");
 const mouseTracker = document.querySelector("*");
 
-// Armor constants and class
-let beamWidth;
+// Armor constants and classes
+let beamWidth, leftX, topY;
 const blockStats = {
     wood:  {hp: 960,  flammability: 80, resistance: 10, color: '#c9b069'},
     stone: {hp: 1200, flammability: 0,  resistance: 50, color: '#a39260'},
@@ -15,13 +15,17 @@ const blockStats = {
 class Armor {
     constructor(stats, x, y) {
         this.hp = stats.hp;
+        this.maxHp = stats.hp;
         this.flammability = stats.flammability;
         this.resistance = stats.resistance;
         this.x = x;
         this.y = y;
         this.dead = false;
     }
-    damageBlock(damage, intensity) {
+    damage(damage, intensity) {
+        if (this.dead) return;
+
+        // Damage based on intensity and fire resistance
         let damageFactor = min(1, intensity / this.resistance);
         this.hp -= damage * damageFactor;
 
@@ -29,33 +33,101 @@ class Armor {
             this.dead = true;
         }
     }
+    revive() {
+        this.hp = this.maxHp;
+        this.dead = false;
+    }
     moveTo(x, y) {
         this.x = x;
         this.y = y;
-        this.dead = false;
+        this.revive();
     }
     changeTo(stats) {
-        this.hp = stats.hp;
+        this.maxHp = stats.hp;
         this.flammability = stats.flammability;
         this.resistance = stats.resistance;
-        this.dead = false;
+        this.revive();
     }
     draw() {
-        if (!beamWidth || beamWidth == undefined) return;
-        
-        // Only draw translucent fill if dead
+        // Draw as translucent fill if dead
         if (this.dead) {
-            ctx.globalAlpha = 0.3;
-            ctx.rect(this.x, this.y, beamWidth, beamWidth);
+            ctx.globalAlpha = 0.5;
+            ctx.fillRect(leftX + this.x * beamWidth, topY + this.y * beamWidth, beamWidth, beamWidth);
             ctx.globalAlpha = 1;
-            ctx.stroke();
         } else {
-            ctx.rect(this.x, this.y, beamWidth, beamWidth);
+            ctx.rect(leftX + this.x * beamWidth, topY + this.y * beamWidth, beamWidth, beamWidth);
             ctx.fill();
             ctx.stroke();
         }
     }
 }
+
+class ArmorWall {
+    constructor() {
+        this.armorWall = [];
+        this.width = -1;
+        this.height = -1;
+        this.type = undefined;
+    }
+    generate(width, height, type) {
+        // Exit if neither dimension has changed
+        if (width == this.width && height == this.height && type == this.type)
+            return;
+
+        // Save new parameters
+        this.width = width;
+        this.height = height;
+        this.type = type;
+
+        // Generate walls in column order, top left to bottom right
+        for (let x = 0; x < width; x++) {
+            for (let y = 0; y < height; y++) {
+                let i = x * height + y;
+                let armorBlock;
+
+                if (i < this.armorWall.length) {
+                    // Reuse existing instances for blocks in the armor wall
+                    armorBlock = this.armorWall[i];
+                    armorBlock.moveTo(x, y);
+                    armorBlock.changeTo(blockStats[this.type]);
+                } else {
+                    // Add new armor class instance to the end of this.armorWall if we run out of existing instances
+                    armorBlock = new Armor(blockStats[this.type], x, y);
+                    this.armorWall.push(armorBlock);
+                }
+            }
+        }
+
+        // Remove excess walls
+        this.armorWall = this.armorWall.slice(0, width * height);
+    }
+    changeTo(type) {
+        if (type == this.type) return;
+
+        for (let armor of this.armorWall) {
+            armor.changeTo(blockStats[type]);
+        }
+    }
+    revive() {
+        for (let armor of this.armorWall) {
+            armor.revive();
+        }
+    }
+    draw() {
+        if (!beamWidth || beamWidth == undefined) return;
+
+        // Set stroke and fill based on armor block color
+        let color = blockStats[config.armor].color;
+        ctx.fillStyle = color;
+        ctx.strokeStyle = mergeColors(color, '#080808');
+        ctx.lineWidth = 4;
+        
+        for (let armor of this.armorWall) {
+            armor.draw();
+        }
+    }
+}
+let armorWall = new ArmorWall();
 
 // Laser config variables
 config = {
@@ -84,6 +156,9 @@ function updateConfig() {
         // Save value to config
         config[item] = document.getElementById(documentId).value;
     }
+
+    // Change armor type
+    armorWall.changeTo(config.armor);
 }
 
 // Track mouse movements and inputs
@@ -136,6 +211,10 @@ for(let item in config) {
     element.addEventListener('change', updateConfig);
 }
 
+// Reset armor wall when the reset button is pressed
+let resetButton = document.getElementById('resetArmor');
+resetButton.addEventListener('click', function() {armorWall.revive()});
+
 // Write the Q count to the label of the slider
 function updateQSlider() {
     let qSlider = document.getElementById("configQ");
@@ -147,7 +226,7 @@ function updateQSlider() {
     }
 }
 
-// Merge two colors
+// Merge two colors for armor block borders
 function mergeColors(color1, color2) {
     let mergedColor = '#'
 
@@ -167,28 +246,27 @@ function mergeColors(color1, color2) {
 // Draw wall of armor
 const armorMargin = 25;  // Empty margins around armor wall, in px
 function drawArmor() {
-    // Get top position of armor wall to place it below the title
+    // Get top position of armor wall in pixels  to place it below the title
     let titleDiv = document.getElementById('title').getBoundingClientRect();
-    let topY = titleDiv.y + titleDiv.height + armorMargin;
+    topY = titleDiv.y + titleDiv.height + armorMargin;
 
-    // Get height of armor wall
-    let armorHeight = ctx.canvas.height - topY - armorMargin;
+    // Get height of armor wall in pixels
+    let wallHeight = ctx.canvas.height - topY - armorMargin;
 
-    // Get left position and width of armor wall
-    let leftX = ctx.canvas.width * 0.2;
-    let armorWidth = ctx.canvas.width * 0.6;
+    // Get left position and width of armor wall in pixels
+    leftX = ctx.canvas.width * 0.2;
+    let wallWidth = ctx.canvas.width * 0.6;
 
     // Get width of one beam of armor (the entire width is spanned by the thickness)
-    beamWidth = armorWidth / config.thickness;
-    
-    // Set stroke and fill based on armor block color
-    let color = blockStats[config.armor].color;
-    ctx.fillStyle = color;
-    ctx.strokeStyle = mergeColors(color, '#080808');
-    ctx.lineWidth = 4;
-    ctx.rect(leftX, topY, armorWidth, armorHeight);
-    ctx.fill();
-    ctx.stroke();
+    beamWidth = wallWidth / config.thickness;
+
+    // Dimensions of armor wall in beams
+    let armorWidth = config.thickness;
+    let armorHeight = Math.floor(wallHeight / beamWidth);
+
+    // Draw armor wall
+    armorWall.generate(armorWidth, armorHeight, config.armor);
+    armorWall.draw();
 }
 
 // Main runtime loop

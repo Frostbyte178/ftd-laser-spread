@@ -37,7 +37,7 @@
             
             <div class="inputConfig">
                 <label for="configRange">Range</label>
-                <input id="configRange" type="number" value="1000" min=0>
+                <input id="configRange" type="number" value="1000" min=0 max="10000">
 
                 <label for="configDps">DPS</label>
                 <input id="configDps" type="number" value="1000" min="0">
@@ -64,19 +64,22 @@
                 </select>
 
                 <label for="configThickness">Armor Thickness</label>
-                <input id="configThickness" type="number" value="40" min="0" max="100">
+                <input id="configThickness" type="number" value="10" min="0" max="100">
             </div><br>
 
             <h2>New Laser Stats</h2>
             <h3>Only applies to the new lasers with beam widening.</h3>
-            <div class="inputConfig">
+            <div class="inputConfig2">
                 <label for="configInaccuracy">Inaccuracy</label>
                 <input id="configInaccuracy" type="number" value="0.05" min="0">
 
                 <label for="configExpansion">Expansion*</label>
                 <input id="configExpansion" type="number" value="10000" min=0>
             </div>
-            <h3>*See info tab for details.
+            <h3>*See info tab for details.</h3><br>
+
+            <h2>Reset Armor</h2>
+            <button type="button" id="resetArmor">Reset</button>
         </div>
     </div>
     <!-- JS -->
@@ -86,8 +89,8 @@
         let infoOpen = false;
         function toggleInfo() {
             infoOpen = !infoOpen;
-            document.getElementById("infoWrapper").style.width = infoOpen ? "300px" : "0px";
-            document.getElementById("infoButton").style.right = infoOpen ? "300px" : "0px";
+            document.getElementById("infoWrapper").style.width = infoOpen ? "350px" : "0px";
+            document.getElementById("infoButton").style.right = infoOpen ? "350px" : "0px";
         }
 
         // Toggling the configuration side panel
