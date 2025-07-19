@@ -48,18 +48,6 @@ class Armor {
         this.resistance = stats.resistance;
         this.revive();
     }
-    draw() {
-        // Draw as translucent fill if dead
-        if (this.dead) {
-            ctx.globalAlpha = 0.5;
-            ctx.fillRect(leftX + this.x * beamWidth, topY + this.y * beamWidth, beamWidth, beamWidth);
-            ctx.globalAlpha = 1;
-        } else {
-            ctx.rect(leftX + this.x * beamWidth, topY + this.y * beamWidth, beamWidth, beamWidth);
-            ctx.fill();
-            ctx.stroke();
-        }
-    }
 }
 
 class ArmorWall {
@@ -113,8 +101,29 @@ class ArmorWall {
             armor.revive();
         }
     }
+    drawContiguousColumn(x, y, height, dead) {
+        // Draw as translucent fill if dead
+        if (dead) {
+            ctx.globalAlpha = 0.5;
+            ctx.fillRect(leftX + x * beamWidth, topY + y * beamWidth, beamWidth, beamWidth * height);
+            ctx.globalAlpha = 1;
+        } else {
+            ctx.rect(leftX + x * beamWidth, topY + y * beamWidth, beamWidth, beamWidth * height);
+            ctx.fill();
+            ctx.stroke();
+
+            // Add lines between to turn the column into a grid
+            for (let i = 1; i < height; i++) {
+                let lineY = topY + (y + i) * beamWidth;
+                ctx.moveTo(leftX + x * beamWidth, lineY);
+                ctx.lineTo(leftX + (x + 1) * beamWidth, lineY);
+                ctx.stroke();
+            }
+        }
+    }
     draw() {
-        if (!beamWidth || beamWidth == undefined) return;
+        if (!beamWidth | beamWidth == undefined) return;
+        if (this.armorWall == undefined | this.armorWall.length == 0) return;
 
         // Set stroke and fill based on armor block color
         let color = blockStats[config.armor].color;
@@ -122,9 +131,26 @@ class ArmorWall {
         ctx.strokeStyle = mergeColors(color, '#080808');
         ctx.lineWidth = 4;
         
-        for (let armor of this.armorWall) {
-            armor.draw();
+        // Draw wall as contiguous columns of alive and dead beams
+        let segmentIsDead = this.armorWall[0].dead;
+        let segmentX = 0;
+        let segmentY = 0;
+        for (let x = 0; x < this.width; x++) {
+            for (let y = 0; y < this.height; y++) {
+                let i = x * this.height + y;
+                let currentBeam = this.armorWall[i];
+
+                // Start a new segment if the old one ended or we ended up at the top of the next column
+                if ((y == 0 & x > 0) | currentBeam.dead != segmentIsDead) {
+                    this.drawContiguousColumn(segmentX, segmentY, (y || this.height) - segmentY, segmentIsDead);
+                    segmentX = x;
+                    segmentY = y;
+                    segmentIsDead = currentBeam.dead;
+                }
+            }
         }
+        // Draw final column because it was left out in the loop
+        this.drawContiguousColumn(segmentX, segmentY, this.height - segmentY, segmentIsDead);
     }
 }
 let armorWall = new ArmorWall();
