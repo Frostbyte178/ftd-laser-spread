@@ -36,7 +36,7 @@ p {
 .info, .config {
     height: 100%;
     width: 0;
-    position: absolute;
+    position: fixed;
     z-index: 1;
     top: 0;
     right: 0;
@@ -86,12 +86,12 @@ p {
 }
 
 .inputConfig input {
-    width: 125px;
+    width: 92px;
 }
 
 .mainWrapper {
     z-index: 1;
-    position: absolute;
+    position: fixed;
     left: 0px;
     top: 0px;
     width: 100%;

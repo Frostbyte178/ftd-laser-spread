@@ -18,7 +18,7 @@
         <span class="configButtonWrapper">
             <span style="font-size:30px;cursor:pointer" onclick="toggleConfig()" id="configButton"></span>
         </span>
-        <div>
+        <div id="title">
             <h1>Laser Beam Widening Testing</h1>
         </div>
         <div id="infoWrapper" class="info">
@@ -33,23 +33,23 @@
         </div>
         <div id="configWrapper" class="config">
             <h1>Config Menu</h1>
-            <h2>Setup Config</h2>
+            <h2>Testing Setup</h2>
             
             <div class="inputConfig">
                 <label for="configRange">Range</label>
-                <input id="configRange" type="number" value="1000">
+                <input id="configRange" type="number" value="1000" min=0>
 
                 <label for="configDps">DPS</label>
-                <input id="configDps" type="number" value="1000">
+                <input id="configDps" type="number" value="1000" min="0">
 
                 <label for="configIntensity">Intensity</label>
-                <input id="configIntensity" type="number" value="60">
+                <input id="configIntensity" type="number" value="60" min="40">
 
                 <label for="configAttenuation">Attenuation</label>
-                <input id="configAttenuation" type="number" value="1">
+                <input id="configAttenuation" type="number" value="1" min="0">
 
                 <label for="configStability">Stability</label>
-                <input id="configStability" type="number" value="100">
+                <input id="configStability" type="number" value="100" min="0" max="100">
 
                 <label for="configQ" id="qLabel">Q Count: 0</label>
                 <input type="range" min="0" max="4" value="0" class="slider" id="configQ">
@@ -62,16 +62,19 @@
                     <option value="metal" selected="selected">Metal</option>
                     <option value="heavy">Heavy Armor</option>
                 </select>
+
+                <label for="configThickness">Armor Thickness</label>
+                <input id="configThickness" type="number" value="40" min="0" max="100">
             </div><br>
 
-            <h2>New Stats Config</h2>
+            <h2>New Laser Stats</h2>
             <h3>Only applies to the new lasers with beam widening.</h3>
             <div class="inputConfig">
                 <label for="configInaccuracy">Inaccuracy</label>
-                <input id="configInaccuracy" type="number" value="0.05">
+                <input id="configInaccuracy" type="number" value="0.05" min="0">
 
                 <label for="configExpansion">Expansion*</label>
-                <input id="configExpansion" type="number" value="10000">
+                <input id="configExpansion" type="number" value="10000" min=0>
             </div>
             <h3>*See info tab for details.
         </div>
