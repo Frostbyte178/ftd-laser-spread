@@ -25,7 +25,7 @@
             <h1>Welcome!</h1>
             <h3>This site simulates a balancing change proposed to increase the effectiveness of 0q, 2q, 3q, and 4q lasers while disincentivizing long-range sniping.</h3>
             <h3>The change revolves around making laser beams deal damage in cones instead of in rays, details below.</h3>
-            <h3>Click on the simulation to fire the modified laser, shift click to fire the current version of lasers.</h3>
+            <h3>Click on the simulation to fire the modified laser, shift click to fire the in-game version of lasers.</h3>
             <h3>Adjust the configuration of the lasers and the armor in the config menu via the gear icon beneath this tab.</h3>
             <h2>Beam Expansion</h2>
             <h3>Laser beams expand to deal damage in a cone, with the tip placed at the end of the optics. The radius of the cone depends on the damage of the shot.</h3>
@@ -37,19 +37,19 @@
             
             <div class="inputConfig">
                 <label for="configRange">Range</label>
-                <input id="configRange" type="number" value="1000" min=0 max="10000">
+                <input id="configRange" type="number" value="1000" min=0 max="10000" step="100">
 
                 <label for="configDps">DPS</label>
-                <input id="configDps" type="number" value="1000" min="0">
+                <input id="configDps" type="number" value="1000" min="0" step="500">
 
                 <label for="configIntensity">Intensity</label>
                 <input id="configIntensity" type="number" value="60" min="40">
 
                 <label for="configAttenuation">Attenuation</label>
-                <input id="configAttenuation" type="number" value="1" min="0">
+                <input id="configAttenuation" type="number" value="1" min="0" step="0.02">
 
                 <label for="configStability">Stability</label>
-                <input id="configStability" type="number" value="100" min="0" max="100">
+                <input id="configStability" type="number" value="100" min="0" max="100" step="5">
 
                 <label for="configQ" id="qLabel">Q Count: 0</label>
                 <input type="range" min="0" max="4" value="0" class="slider" id="configQ">
@@ -64,17 +64,17 @@
                 </select>
 
                 <label for="configThickness">Armor Thickness</label>
-                <input id="configThickness" type="number" value="50" min="1" max="50">
+                <input id="configThickness" type="number" value="25" min="1" max="50">
             </div><br>
 
             <h2>New Laser Stats</h2>
             <h3>Only applies to the new lasers with beam widening.</h3>
             <div class="inputConfig2">
                 <label for="configInaccuracy">Inaccuracy</label>
-                <input id="configInaccuracy" type="number" value="0.05" min="0">
+                <input id="configInaccuracy" type="number" value="0.05" min="0" step="0.01">
 
                 <label for="configExpansion">Expansion*</label>
-                <input id="configExpansion" type="number" value="10000" min=0>
+                <input id="configExpansion" type="number" value="10000" min=0 step="1000">
             </div>
             <h3>*See info tab for details.</h3><br>
 
