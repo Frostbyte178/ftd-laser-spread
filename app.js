@@ -372,10 +372,10 @@ function getAttenuation() {
     return (1 - config.attenuation / 100) ** (config.range / 100);
 }
 
-function doOldLaserDamage(angle) {
+function doOldLaserDamage(angle, damage = singleShotDamage) {
     // Damage block by block until the laser's shot runs out of damage
     // Attenuation within the armor wall is ignored as it is negligible
-    let remainingDamage = singleShotDamage * getAttenuation();
+    let remainingDamage = damage * getAttenuation();
 
     let depth;
     for (depth = 0; depth < config.thickness; depth++) {
@@ -456,12 +456,16 @@ function drawOldLaser() {
     ctx.globalAlpha = 1;
 }
 
-function doNewLaserDamage(topAngle, bottomAngle) {
-    // Damage block by block until the laser's shot runs out of damage
-    // Attenuation within the armor wall is ignored as it is negligible
-    let remainingDamage = singleShotDamage * getAttenuation();
+const rayCount = 201; // Must be odd
+function doNewLaserDamage(angle) {
+    let rayDamage = singleShotDamage * getAttenuation() / rayCount;
 
-
+    // Fire a bunch of rays where each deals a small proportion of the total damage
+    for (let i = -1; i <= 1; i += 2 / (rayCount - 1)) {
+        // Evenly space rays based on lateral distance, not angle
+        let newAngle = angle + Math.atan2(singleShotDamage / config.expansion * i, 100);
+        doOldLaserDamage(newAngle, rayDamage)
+    }
 }
 
 let newLaserOpacity = 0;
@@ -478,11 +482,11 @@ function drawNewLaser() {
         // Get angles for the top and bottom edges of the beam
         newLaserSpreadAngle = Math.atan2(singleShotDamage / config.expansion, 100);
 
-        doNewLaserDamage(newLaserBaseAngle + newLaserSpreadAngle, newLaserBaseAngle - newLaserSpreadAngle);
+        doNewLaserDamage(newLaserBaseAngle);
         newLaserLastShotTime = Date.now();
-        newLaserOpacity = 1;
+        newLaserOpacity = 0.5;
     } else {
-        newLaserOpacity -= 0.1;
+        newLaserOpacity -= 0.05;
     }
 
     // Exit if opacity is too low
