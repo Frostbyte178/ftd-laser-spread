@@ -5,7 +5,7 @@ const fps = 40;
 let lastRefresh = -1;
 
 // Armor constants and classes
-let beamWidth, armorLeftX, armorTopY, armorMiddleY;
+let beamWidth, armorLeftX, armorTopY, armorMiddleY, armorHeight;
 const blockStats = {
     wood:  {hp: 960,  flammability: 80, resistance: 10, color: '#c9b069'},
     stone: {hp: 1200, flammability: 0,  resistance: 50, color: '#a39260'},
@@ -24,16 +24,21 @@ class Armor {
         this.y = y;
         this.dead = false;
     }
-    damage(damage, intensity) {
-        if (this.dead) return;
+    damage(damage) {
+        if (this.dead) return 0;
 
         // Damage based on intensity and fire resistance
-        let damageFactor = min(1, intensity / this.resistance);
+        let damageFactor = Math.min(1, config.intensity / this.resistance);
+        let damageRequired = Math.min(this.hp / damageFactor, damage); // How much damage was removed from the shot by destroying/damaging this block
         this.hp -= damage * damageFactor;
 
+        // Kill the block if it is dead
         if (this.hp <= 0) {
             this.dead = true;
         }
+
+        // Return the amount of damage required to damage/destroy the block
+        return damageRequired;
     }
     revive() {
         this.hp = this.maxHp;
@@ -313,7 +318,7 @@ function drawArmor() {
 
     // Get dimensions of armor wall in beams
     let armorWidth = config.thickness;
-    let armorHeight = Math.floor(wallHeight / beamWidth);
+    armorHeight = Math.floor(wallHeight / beamWidth);
 
     // Get middle y position of armor wall in pixels
     armorMiddleY = armorTopY + armorHeight * beamWidth / 2;
@@ -327,12 +332,54 @@ function drawArmor() {
     armorWall.draw();
 }
 
-// Get height in beams or pixels based on pixel position from the left edge of the screen
-function laserBeamY(angle, pixelX, returnPixels = false) {
+// Get laser Y in pixels based on pixel position from the left edge of the screen
+function laserBeamPixelY(angle, pixelX) {
     let rangeBlocks = (pixelX - armorLeftX) / beamWidth + config.range;
-    if (returnPixels)
-        return (Math.tan(angle) * rangeBlocks) * beamWidth + armorMiddleY;
-    return Math.tan(angle) * rangeBlocks;
+    return (Math.tan(angle) * rangeBlocks) * beamWidth + armorMiddleY;
+}
+
+// Get laser Y in beams based on range from the left edge of the armor wall
+function laserBeamBlockY(angle, depth) {        
+    return Math.tan(angle) * (depth + config.range) + armorHeight / 2;
+}
+
+// Do laser attenuation damage reduction
+function getAttenuation() {
+    // remaining damage per 100m to the power of the range divided by 100m
+    return (1 - config.attenuation / 100) ** (config.range / 100);
+}
+
+function doOldLaserDamage(angle) {
+    // Damage block by block until the laser's shot runs out of damage
+    // Attenuation within the block is ignored as it is negligible
+    let remainingDamage = singleShotDamage * getAttenuation();
+
+    for (let depth = 0; depth < config.thickness; depth++) {
+        // Exit if we run out of damage
+        if (remainingDamage <= 0) break;
+
+        // Exit if we're beyond the confines of the wall
+        let blockToDamageY = Math.floor(laserBeamBlockY(angle, depth));
+        if (blockToDamageY < 0 | blockToDamageY > armorHeight) return;
+
+        // Damage block we're hitting on the front
+        console.log(getAttenuation(depth))
+        let armorBlockIndex = depth * armorHeight + blockToDamageY;
+        remainingDamage -= armorWall.armorWall[armorBlockIndex].damage(remainingDamage);
+
+        // Exit if we run out of damage
+        if (remainingDamage <= 0) break;
+        
+        // Damage adjacent block if going sideways
+        let nextBlockToDamageY = Math.floor(laserBeamBlockY(angle, depth + 1));
+
+        // Ignore if we're going off the edge of the armor wall
+        if (nextBlockToDamageY < 0 | nextBlockToDamageY > armorHeight) continue;
+
+        // Damage adjacent block based on Y position
+        let nextArmorBlockIndex = armorBlockIndex + nextBlockToDamageY - blockToDamageY;
+        remainingDamage -= armorWall.armorWall[nextArmorBlockIndex].damage(remainingDamage);
+    }
 }
 
 function drawOldLaser() {
@@ -340,13 +387,16 @@ function drawOldLaser() {
     let angle = Math.atan2(mouse.blockY, mouse.blockX + config.range);
     angle += (Math.random() * 0.1 - 0.05) * Math.PI / 180; // Inaccuracy in radians
 
+    // Do damage
+    doOldLaserDamage(angle);
+
     // Draw laser beam red outline
     let startX = Math.max(0, armorLeftX - config.range * beamWidth);
-    let startY = laserBeamY(angle, startX, true);
-    let endY = laserBeamY(angle, ctx.canvas.width, true);
+    let startY = laserBeamPixelY(angle, startX);
+    let endY = laserBeamPixelY(angle, ctx.canvas.width);
     ctx.beginPath();
     ctx.strokeStyle = '#f52727';
-    ctx.lineWidth = Math.min(64, beamWidth * 0.8); // Size based on beam size, max of 64px
+    ctx.lineWidth = Math.min(50, beamWidth * 0.6); // Size based on beam size, max of 64px
     ctx.moveTo(startX, startY);
     ctx.lineTo(ctx.canvas.width, endY);
     ctx.stroke();
@@ -354,7 +404,7 @@ function drawOldLaser() {
     // Draw laser beam white center
     ctx.beginPath();
     ctx.strokeStyle = '#dddddd';
-    ctx.lineWidth = Math.min(20, beamWidth * 0.25); // Size based on beam size, max of 20px
+    ctx.lineWidth = Math.min(20, beamWidth * 0.24); // Size based on beam size, max of 20px
     ctx.moveTo(ctx.canvas.width, endY);
     ctx.lineTo(startX, startY);
     ctx.stroke();
@@ -372,22 +422,26 @@ function drawNewLaser() {
     let startX = Math.max(0, armorLeftX - config.range * beamWidth);
     ctx.beginPath();
     ctx.strokeStyle = ctx.fillStyle = '#2727f5';
-    ctx.moveTo(startX, laserBeamY(baseAngle + spreadAngle, startX, true));
-    ctx.lineTo(ctx.canvas.width, laserBeamY(baseAngle + spreadAngle, ctx.canvas.width, true));
-    ctx.lineTo(ctx.canvas.width, laserBeamY(baseAngle - spreadAngle, ctx.canvas.width, true));
-    ctx.lineTo(startX, laserBeamY(baseAngle - spreadAngle, startX, true));
+    ctx.lineWidth = 16; // Use stroke as minimum size of beam
+    ctx.moveTo(startX, laserBeamPixelY(baseAngle + spreadAngle, startX));
+    ctx.lineTo(ctx.canvas.width, laserBeamPixelY(baseAngle + spreadAngle, ctx.canvas.width));
+    ctx.lineTo(ctx.canvas.width, laserBeamPixelY(baseAngle - spreadAngle, ctx.canvas.width));
+    ctx.lineTo(startX, laserBeamPixelY(baseAngle - spreadAngle, startX));
     ctx.closePath();
     ctx.fill();
+    ctx.stroke();
 
     // Draw laser beam white center as a trapezoid
     ctx.beginPath();
     ctx.strokeStyle = ctx.fillStyle = '#dddddd';
-    ctx.moveTo(startX, laserBeamY(baseAngle + spreadAngle / 2, startX, true));
-    ctx.lineTo(ctx.canvas.width, laserBeamY(baseAngle + spreadAngle / 2, ctx.canvas.width, true));
-    ctx.lineTo(ctx.canvas.width, laserBeamY(baseAngle - spreadAngle / 2, ctx.canvas.width, true));
-    ctx.lineTo(startX, laserBeamY(baseAngle - spreadAngle / 2, startX, true));
+    ctx.lineWidth = 6; // Use stroke as minimum size of beam
+    ctx.moveTo(startX, laserBeamPixelY(baseAngle + spreadAngle / 2, startX));
+    ctx.lineTo(ctx.canvas.width, laserBeamPixelY(baseAngle + spreadAngle / 2, ctx.canvas.width));
+    ctx.lineTo(ctx.canvas.width, laserBeamPixelY(baseAngle - spreadAngle / 2, ctx.canvas.width));
+    ctx.lineTo(startX, laserBeamPixelY(baseAngle - spreadAngle / 2, startX));
     ctx.closePath();
     ctx.fill();
+    ctx.stroke();
 }
 
 function drawLaser() {
