@@ -23,6 +23,7 @@ class Armor {
         this.x = x;
         this.y = y;
         this.dead = false;
+        this.cachedColor = blockStats[config.armor].color;
     }
     damage(damage) {
         if (this.dead) return 0;
@@ -30,12 +31,15 @@ class Armor {
         // Damage based on intensity and fire resistance
         let damageFactor = Math.min(1, config.intensity / this.resistance);
         let damageRequired = Math.min(this.hp / damageFactor, damage); // How much damage was removed from the shot by destroying/damaging this block
-        this.hp -= damage * damageFactor;
+        this.hp = Math.max(0, this.hp - damage * damageFactor);
 
         // Kill the block if it is dead
         if (this.hp <= 0) {
             this.dead = true;
         }
+
+        // Set color based on health fraction
+        this.cachedColor = mergeColors(blockStats[config.armor].color, '#000000', this.hp / this.maxHp);
 
         // Return the amount of damage required to damage/destroy the block
         return damageRequired;
@@ -43,6 +47,7 @@ class Armor {
     revive() {
         this.hp = this.maxHp;
         this.dead = false;
+        this.cachedColor = blockStats[config.armor].color;
     }
     moveTo(x, y) {
         this.x = x;
@@ -108,13 +113,24 @@ class ArmorWall {
             armor.revive();
         }
     }
-    drawContiguousColumn(x, y, height, dead) {
+    drawContiguousColumn(x, y, height, color, dead) {
+        ctx.beginPath();
+        ctx.lineWidth = 4;
+        let deadColor = blockStats[config.armor].color;
+        ctx.strokeStyle = mergeColors(deadColor, '#080808');
+
         // Draw as translucent fill if dead
         if (dead) {
+            // Set fill based on standard armor block color
+            ctx.fillStyle = deadColor;
+
             ctx.globalAlpha = 0.5;
             ctx.fillRect(armorLeftX + x * beamWidth, armorTopY + y * beamWidth, beamWidth, beamWidth * height);
             ctx.globalAlpha = 1;
         } else {
+            // Set fill based on current armor block color
+            ctx.fillStyle = color;
+
             ctx.rect(armorLeftX + x * beamWidth, armorTopY + y * beamWidth, beamWidth, beamWidth * height);
             ctx.fill();
             ctx.stroke();
@@ -131,16 +147,11 @@ class ArmorWall {
     draw() {
         if (!beamWidth | beamWidth == undefined) return;
         if (this.armorWall == undefined | this.armorWall.length == 0) return;
-
-        // Set stroke and fill based on armor block color
-        ctx.beginPath();
-        let color = blockStats[config.armor].color;
-        ctx.fillStyle = color;
-        ctx.strokeStyle = mergeColors(color, '#080808');
-        ctx.lineWidth = 4;
         
         // Draw wall as contiguous columns of alive and dead beams
-        let segmentIsDead = this.armorWall[0].dead;
+        let segmentHp = this.armorWall[0].hp;
+        let segmentDead = this.armorWall[0].dead;
+        let segmentColor = this.armorWall[0].cachedColor;
         let segmentX = 0;
         let segmentY = 0;
         for (let x = 0; x < this.width; x++) {
@@ -149,16 +160,23 @@ class ArmorWall {
                 let currentBeam = this.armorWall[i];
 
                 // Start a new segment if the old one ended or we ended up at the top of the next column
-                if ((y == 0 & x > 0) | currentBeam.dead != segmentIsDead) {
-                    this.drawContiguousColumn(segmentX, segmentY, (y || this.height) - segmentY, segmentIsDead);
+                if ((y == 0 & x > 0) | currentBeam.hp != segmentHp) {
+                    console.log(segmentHp, currentBeam.hp, currentBeam.dead)
+                    this.drawContiguousColumn(segmentX, segmentY, (y || this.height) - segmentY, segmentColor, segmentDead);
                     segmentX = x;
                     segmentY = y;
-                    segmentIsDead = currentBeam.dead;
+                    segmentHp = currentBeam.hp;
+                    segmentDead = currentBeam.dead;
+                    segmentColor = currentBeam.cachedColor;
                 }
             }
         }
         // Draw final column because it was left out in the loop
-        this.drawContiguousColumn(segmentX, segmentY, this.height - segmentY, segmentIsDead);
+        this.drawContiguousColumn(
+            segmentX, segmentY, this.height - segmentY, 
+            this.armorWall[this.armorWall.length - 1].cachedColor,
+            this.armorWall[this.armorWall.length - 1].dead
+        );
     }
 }
 let armorWall = new ArmorWall();
@@ -280,7 +298,7 @@ function updateQSlider() {
 }
 
 // Merge two colors for armor block borders
-function mergeColors(color1, color2) {
+function mergeColors(color1, color2, weight = 0.5) {
     let mergedColor = '#'
 
     // Take the mean of each rgb pair between the two colors
@@ -289,8 +307,12 @@ function mergeColors(color1, color2) {
         let subpixel1 = parseInt(color1.substring(i, i + 2), 16);
         let subpixel2 = parseInt(color2.substring(i, i + 2), 16);
 
-        // Take mean of values and convert back to hexadecimal
-        mergedColor += Math.round((subpixel1 + subpixel2) / 2).toString(16);
+        // Take weighted average of values and convert back to hexadecimal
+        let mergedSubpixel = Math.round(subpixel2 + (subpixel1 - subpixel2) * weight).toString(16);
+        while (mergedSubpixel.length < 2) {
+            mergedSubpixel = "0" + mergedSubpixel;
+        }
+        mergedColor += mergedSubpixel;
     }
 
     return mergedColor;
@@ -391,9 +413,8 @@ let oldLaserLastShotTime = -1;
 let oldLaserAngle;
 let oldLaserDepth;
 function drawOldLaser() {
-
-    // Do damage and update opacity if it's time to shoot or if the Q count is 0
-    if (config.q == 0 | (Date.now() - oldLaserLastShotTime >= 1000 / shotsPerSecond[config.q])) {
+    // Do damage and update opacity if it's time to shoot or if the Q count is 0, but only if the fire command was given
+    if ((config.q == 0 | (Date.now() - oldLaserLastShotTime >= 1000 / shotsPerSecond[config.q])) & mouse.rmb) {
         // Get laser angle value
         oldLaserAngle = Math.atan2(mouse.blockY, mouse.blockX + config.range);
         oldLaserAngle += (Math.random() * 0.1 - 0.05) * Math.PI / 180; // Inaccuracy in radians
@@ -402,8 +423,11 @@ function drawOldLaser() {
         oldLaserLastShotTime = Date.now();
         oldLaserOpacity = 1;
     } else {
-        oldLaserOpacity = Math.max(0, oldLaserOpacity - 0.1);
+        oldLaserOpacity -= 0.1;
     }
+
+    // Exit if opacity is too low
+    if (oldLaserOpacity <= 0) return;
 
     // Draw laser beam red outline
     let startX = Math.max(0, armorLeftX - config.range * beamWidth);
@@ -445,8 +469,8 @@ let newLaserLastShotTime = -1;
 let newLaserBaseAngle;
 let newLaserSpreadAngle;
 function drawNewLaser() {
-    // Do damage and update opacity if it's time to shoot or if the Q count is 0
-    if (config.q == 0 | (Date.now() - newLaserLastShotTime >= 1000 / shotsPerSecond[config.q])) {
+    // Do damage and update opacity if it's time to shoot or if the Q count is 0, but only if the fire command was given
+    if ((config.q == 0 | (Date.now() - newLaserLastShotTime >= 1000 / shotsPerSecond[config.q])) & mouse.lmb) {
         // Get laser angle values
         newLaserBaseAngle = Math.atan2(mouse.blockY, mouse.blockX + config.range);
         newLaserBaseAngle += (Math.random() * config.inaccuracy * 2 - config.inaccuracy) * Math.PI / 180; // Inaccuracy in radians
@@ -458,8 +482,11 @@ function drawNewLaser() {
         newLaserLastShotTime = Date.now();
         newLaserOpacity = 1;
     } else {
-        newLaserOpacity = Math.max(0, newLaserOpacity - 0.1);
+        newLaserOpacity -= 0.1;
     }
+
+    // Exit if opacity is too low
+    if (newLaserOpacity <= 0) return;
 
     // Draw laser beam blue outline as a trapezoid
     let startX = Math.max(0, armorLeftX - config.range * beamWidth);
@@ -495,11 +522,8 @@ function drawLaser() {
     // Exit if clicks shouldn't register
     if (mouse.blockClicks) return;
 
-    if (mouse.lmb) {
-        drawNewLaser();
-    } else if (mouse.rmb){
-        drawOldLaser();
-    }
+    drawNewLaser();
+    drawOldLaser();
 }
 
 // Poll time to see if we should advance frames
