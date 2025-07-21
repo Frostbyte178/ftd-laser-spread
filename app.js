@@ -384,7 +384,7 @@ function doOldLaserDamage(angle) {
 
         // Exit if we're beyond the confines of the wall
         let blockToDamageY = Math.floor(laserBeamBlockY(angle, depth));
-        if (blockToDamageY < 0 | blockToDamageY > armorHeight) return -1;
+        if (blockToDamageY < 0 | blockToDamageY >= armorHeight) return -1;
 
         // Damage block we're hitting on the front
         let armorBlockIndex = depth * armorHeight + blockToDamageY;
@@ -397,7 +397,7 @@ function doOldLaserDamage(angle) {
         let nextBlockToDamageY = Math.floor(laserBeamBlockY(angle, depth + 1));
 
         // Ignore if we're going off the edge of the armor wall
-        if (nextBlockToDamageY < 0 | nextBlockToDamageY > armorHeight) continue;
+        if (nextBlockToDamageY < 0 | nextBlockToDamageY >= armorHeight) continue;
 
         // Damage adjacent block based on Y position
         let nextArmorBlockIndex = armorBlockIndex + nextBlockToDamageY - blockToDamageY;
